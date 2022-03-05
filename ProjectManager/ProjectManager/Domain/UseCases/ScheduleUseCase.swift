@@ -21,7 +21,7 @@ class ScheduleUseCase {
     }
 
     func create(_ schedule: Schedule) -> Observable<Schedule> {
-
+        print("생성됨")
         return scheduleProvider.create(schedule)
     }
 

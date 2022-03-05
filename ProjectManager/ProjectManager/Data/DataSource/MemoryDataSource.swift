@@ -9,11 +9,20 @@ import Foundation
 import RxSwift
 
 class MemoryDataSource: DataSource {
-    var storage = [Schedule]()
+    var storage: [Schedule] = [
+        Schedule(title: "아아아", body: "우우우", dueDate: Date(), progress: .doing),
+        Schedule(title: "아아아", body: "우우우", dueDate: Date(), progress: .doing),
+        Schedule(title: "아아아", body: "우우우", dueDate: Date(), progress: .doing),
+        Schedule(title: "아아아", body: "우우우", dueDate: Date(), progress: .doing)
+    ] {
+        didSet {
+            print("스케쥴 추가됨")
+        }
+    }
 
     func rxFetch() -> Observable<[Schedule]> {
         return Observable.create { emitter in
-            self.fetch() { result in
+            self.fetch { result in
                 emitter.onNext(result)
             }
             return Disposables.create()
