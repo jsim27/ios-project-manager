@@ -15,17 +15,31 @@ class MainViewModel {
     let useCase: ScheduleUseCase
     let bag = DisposeBag()
 
-    //MARK: Input
+    //MARK: - Input
     let scheduleList = BehaviorRelay<[Schedule]>(value: [])
 
+    //MARK: - Output
 
-    //MARK: Output
-
-    var schedules: Driver<[Schedule]>
+    var schedules: Driver<[[Schedule]]>
 
     init(useCase: ScheduleUseCase) {
         self.useCase = useCase
-        self.schedules = scheduleList.asDriver()
+        self.schedules = scheduleList.map { schedules in
+            schedules
+                .reduce([[Schedule](), [Schedule](), [Schedule]()]) { partialResult, schedule in
+                    var new = partialResult
+                    switch schedule.progress {
+                    case .todo:
+                        new[0].append(schedule)
+                    case .doing:
+                        new[1].append(schedule)
+                    case .done:
+                        new[2].append(schedule)
+                    }
+                    return new
+                }
+        }
+        .asDriver(onErrorJustReturn: [[]])
     }
 
     func fetch() {
@@ -36,16 +50,24 @@ class MainViewModel {
             .disposed(by: bag)
     }
 
-    func delete(scheduleID: UUID) {
-        useCase.delete(scheduleID)
+    func delete(at indexPath: IndexPath) {
+        let scheduleID = self.schduleID(of: indexPath)
+
+        self.useCase.delete(scheduleID)
             .filter { $0 }
-            .subscribe(onNext: { result in
-                let new = self.scheduleList.value.filter { schedule in
+            .subscribe(onNext: { _ in
+                let schedules = self.scheduleList.value.filter { schedule in
                     schedule.id != scheduleID
                 }
-                self.scheduleList.accept(new)
+                self.scheduleList.accept(schedules)
             })
             .disposed(by: bag)
+
+
+    }
+
+    private func schduleID(of indexPath: IndexPath) -> UUID {
+        return self.scheduleList.value[indexPath.row].id
     }
 }
 

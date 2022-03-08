@@ -12,7 +12,15 @@ class MainViewController: UIViewController {
 
     private let viewModel: MainViewModel
     private let bag = DisposeBag()
-    private let tableView = UITableView()
+    private let stackView: UIStackView = {
+        let stackView = UIStackView()
+        stackView.axis = .horizontal
+        stackView.distribution = .fillEqually
+        stackView.alignment = .fill
+        stackView.spacing = 2.0
+        return stackView
+    }()
+    private let tableViews = Array(repeating: UITableView(), count: 3)
 
     init(viewModel: MainViewModel) {
         self.viewModel = viewModel
@@ -39,23 +47,41 @@ class MainViewController: UIViewController {
     }
 
     private func configureSubView() {
-        self.view.addSubview(self.tableView)
+//        self.configureHierarchy()
+        self.view.addSubview(stackView)
+        self.tableViews.forEach { tableView in
+            self.stackView.addArrangedSubview(tableView)
+        }
         self.configureTableView()
         self.binding()
     }
 
+//    private func configureHierarchy() {
+//
+//    }
+
     private func configureConstraint() {
-        self.tableView.translatesAutoresizingMaskIntoConstraints = false
+        self.stackView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            self.tableView.centerXAnchor.constraint(equalTo: self.view.centerXAnchor),
-            self.tableView.centerYAnchor.constraint(equalTo: self.view.centerYAnchor),
-            self.tableView.widthAnchor.constraint(equalTo: self.view.widthAnchor, multiplier: 0.3),
-            self.tableView.heightAnchor.constraint(equalTo: self.view.heightAnchor)
+            self.stackView.leadingAnchor.constraint(
+                equalTo: self.view.safeAreaLayoutGuide.leadingAnchor
+            ),
+            self.stackView.trailingAnchor.constraint(
+                equalTo: self.view.safeAreaLayoutGuide.trailingAnchor
+            ),
+            self.stackView.topAnchor.constraint(
+                equalTo: self.view.safeAreaLayoutGuide.topAnchor
+            ),
+            self.stackView.bottomAnchor.constraint(
+                equalTo: self.view.safeAreaLayoutGuide.bottomAnchor
+            )
         ])
     }
 
     private func configureTableView() {
-        self.tableView.register(cellWithClass: ScheduleListCell.self)
+        self.tableViews.forEach { tableView in
+            tableView.register(cellWithClass: ScheduleListCell.self)
+        }
     }
 
     private func binding() {
@@ -63,9 +89,12 @@ class MainViewController: UIViewController {
     }
 
     private func tableViewBinding() {
-        self.viewModel.schedules
+        
+        self.tableViews.enumerated().forEach { index, tableView in
+            self.viewModel.schedules
+
             .drive(
-                self.tableView.rx.items(
+                tableView.rx.items(
                     cellIdentifier: "ScheduleListCell",
                     cellType: ScheduleListCell.self
                 )
@@ -75,6 +104,17 @@ class MainViewController: UIViewController {
                 cell.dateLabel.text = item.formattedDateString
             }
             .disposed(by: bag)
+
+            tableView.rx
+                .itemDeleted
+                .subscribe(onNext: { indexPath in
+                    self.deleteRow(at: indexPath)
+                })
+                .disposed(by: bag)
+        }
     }
 
+    private func deleteRow(at indexPath: IndexPath) {
+        self.viewModel.delete(at: indexPath)
+    }
 }
