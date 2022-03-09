@@ -12,20 +12,27 @@ import UIKit
 
 class ScheduleDetailViewModel {
 
+    enum Mode {
+        case detail, edit, create
+    }
+    let mode = BehaviorRelay<Mode>(value: .create)
+
     // MARK: - Properties
 
     private let bag = DisposeBag()
     private let useCase: ScheduleUseCase
+    private let coordinator: ScheduleDetailCoordinator
 
     // MARK: - Initializer
 
-    init(useCase: ScheduleUseCase) {
+    init(useCase: ScheduleUseCase, coordinator: ScheduleDetailCoordinator) {
         self.useCase = useCase
+        self.coordinator = coordinator
     }
 
     struct Input {
         let leftBarButtonDidTap: Observable<Void>
-        let rightBarButtonDidTap: Observable<Void>
+        let rightBarButtonDidTap: Observable<Schedule>
         let textViewDidChange: Observable<String?>
     }
 
@@ -33,6 +40,9 @@ class ScheduleDetailViewModel {
         let scheduleTitleText = BehaviorRelay<String>(value: "")
         let scheduleDate = BehaviorRelay<Date>(value: Date())
         let scheduleBodyText = BehaviorRelay<String>(value: "")
+        let leftBarButtonText = BehaviorRelay<String>(value: "")
+        let rightBarButtonText = BehaviorRelay<String>(value: "")
+        let editable = BehaviorRelay<Bool>(value: false)
     }
 
     // MARK: - Methods
@@ -43,13 +53,29 @@ class ScheduleDetailViewModel {
 
         input.leftBarButtonDidTap
             .subscribe(onNext: { _ in
-
+                switch self.mode.value {
+                case .detail:
+                    self.mode.accept(.edit)
+                case .edit:
+                    self.mode.accept(.detail)
+                case .create:
+                    self.coordinator.dismiss()
+                }
             })
             .disposed(by: disposeBag)
 
         input.rightBarButtonDidTap
-            .subscribe(onNext: { _ in
-
+            .subscribe(onNext: { schedule in
+                switch self.mode.value {
+                case .detail:
+                    self.coordinator.dismiss()
+                case .edit:
+                    self.useCase.update(schedule)
+                    self.mode.accept(.detail)
+                case .create:
+                    self.useCase.create(schedule)
+                    self.coordinator.dismiss()
+                }
             })
             .disposed(by: disposeBag)
 
@@ -74,6 +100,21 @@ private extension ScheduleDetailViewModel {
                 output.scheduleTitleText.accept(schedule.title)
                 output.scheduleDate.accept(schedule.dueDate)
                 output.scheduleBodyText.accept(schedule.body)
+            })
+            .disposed(by: disposeBag)
+
+        self.mode
+            .subscribe(onNext: { mode in
+                switch mode {
+                case .detail:
+                    output.editable.accept(false)
+                    output.leftBarButtonText.accept("수정")
+                    output.rightBarButtonText.accept("완료")
+                case .edit, .create:
+                    output.editable.accept(true)
+                    output.leftBarButtonText.accept("취소")
+                    output.rightBarButtonText.accept("완료")
+                }
             })
             .disposed(by: disposeBag)
     }
