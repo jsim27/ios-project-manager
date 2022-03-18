@@ -22,9 +22,24 @@ final class ScheduleUseCase: MainUseCase, ScheduleItemUseCase {
 
     init(repository: Repository) {
         self.scheduleProvider = repository
+        self.binding()
     }
 
     // MARK: - Methods
+
+    private func binding() {
+        NetworkCheck.shared.isConnected
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { isConnected in
+                print("새로연결됨!!")
+                if isConnected {
+                    self.fetch()
+                }
+            }, onError: { error in
+                print(error)
+            })
+            .disposed(by: self.bag)
+    }
 
     func fetch() {
         self.scheduleProvider.fetch()

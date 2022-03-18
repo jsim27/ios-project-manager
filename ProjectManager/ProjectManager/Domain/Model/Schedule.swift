@@ -11,15 +11,24 @@ struct Schedule {
     let id: UUID
     var title: String
     var body: String
-    var dueDate: Date
+    var dueDate: Date 
+    var lastUpdated: Date
     var progress: Progress
 
-    init(id: UUID = UUID(), title: String, body: String, dueDate: Date, progress: Progress) {
+    init(
+        id: UUID = UUID(),
+        title: String,
+        body: String,
+        dueDate: Date,
+        progress: Progress,
+        lastUpdated: Date = Date()
+    ) {
         self.id = id
         self.title = title
         self.body = body
         self.dueDate = dueDate
         self.progress = progress
+        self.lastUpdated = lastUpdated
     }
 }
 

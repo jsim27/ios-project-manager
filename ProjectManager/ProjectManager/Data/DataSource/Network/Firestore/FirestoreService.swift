@@ -82,7 +82,8 @@ extension Schedule {
             "title": self.title,
             "body": self.body,
             "progress": self.progress.description,
-            "date": self.dueDate
+            "dueDate": self.dueDate,
+            "lastUpdated": self.lastUpdated
         ]
     }
 
@@ -96,7 +97,9 @@ extension Schedule {
         case "DONE":  self.progress = Progress.done
         default:  self.progress = Progress.todo
         }
-        let stamp = document["date"] as! Timestamp
-        self.dueDate = stamp.dateValue()
+        let dueDateStamp = document["dueDate"] as! Timestamp
+        self.dueDate = dueDateStamp.dateValue()
+        let lastUpdatedStamp = document["lastUpdated"] as! Timestamp
+        self.lastUpdated = lastUpdatedStamp.dateValue()
     }
 }

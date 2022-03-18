@@ -15,6 +15,7 @@ class StorableSchedule: Object {
     @objc dynamic var body = ""
     @objc dynamic var dueDate = Date()
     @objc dynamic var progress = ""
+    @objc dynamic var lastUpdated = Date()
 
 //    var domainSchedule: Schedule {
 //        get {
