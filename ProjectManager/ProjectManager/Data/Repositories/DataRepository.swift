@@ -31,31 +31,31 @@ final class DataRepository: Repository {
     }
 
     func fetch() -> Single<[Schedule]> {
-        if self.isConnected {
-            return Single.zip(self.localDataSource.fetch(),
-                       self.remoteDataSource.fetch()
-            ) { local, remote -> Completable in
-                let localId = Set(local.map { $0.id })
-                let remoteId = Set(remote.map { $0.id })
-                let difference1 = localId.subtracting(remoteId)
-                let filltered1 = local.filter { difference1.contains($0.id) }
-                let a = Completable.zip(filltered1.map {
-                    self.remoteDataSource.create($0)
-                })
-                let difference2 = remoteId.subtracting(localId)
-                let b = Completable.zip(difference2.map {
-                    self.remoteDataSource.delete($0)
-                })
-                Completable.zip(a, b)
-
-                return local
-            }
+        if isConnected {
+            return self.syncronize()
+                .andThen(self.remoteDataSource.fetch())
+        } else {
+            return self.localDataSource.fetch()
         }
-        return self.localDataSource.fetch()
     }
 
-    func syncronize() {
-
+    func syncronize() -> Completable {
+        return Single.zip(self.localDataSource.fetch(),
+                          self.remoteDataSource.fetch()
+        ).map { local, remote -> Completable in
+            let localId = Set(local.map { $0.id })
+            let remoteId = Set(remote.map { $0.id })
+            let difference1 = localId.subtracting(remoteId)
+            let filltered1 = local.filter { difference1.contains($0.id) }
+            let a = Completable.zip(filltered1.map {
+                self.remoteDataSource.create($0)
+            })
+            let difference2 = remoteId.subtracting(localId)
+            let b = Completable.zip(difference2.map {
+                self.remoteDataSource.delete($0)
+            })
+            return Completable.zip(a, b)
+        }.flatMapCompletable { $0 }
     }
 
     // 네트워크 연결 (off -> on) : 동기화
